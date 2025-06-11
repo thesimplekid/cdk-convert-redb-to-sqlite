@@ -4,3 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.98"
+cdk-common = { version = "0.10.0", default-features = false, features = ["auth", "mint"] }
+cdk-redb = { version = "0.10.0", default-features = false, features = ["mint", "auth"] }
+cdk-sqlite = { version = "0.10.0", default-features = false, features = ["mint", "auth"] }
+clap = { version = "4.5.40", features = ["derive"] }
+home = "0.5.11"
+redb = "2.4.0"
+serde_json = "1.0.140"
+tokio = { version = "1.45.1", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
