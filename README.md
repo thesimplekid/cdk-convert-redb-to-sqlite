@@ -1,15 +1,15 @@
-# CDK-MINTD ReDB to SQLite Migration Tool
+# CDK-MINTD redb to SQLite Migration Tool
 
-This tool is designed to migrate a [CDK-MINTD](https://github.com/cashubtc/cdk) database from ReDB to SQLite format. It specifically targets version 10 of CDK-MINTD and should only be used for upgrading from this version.
+This tool is designed to migrate a [CDK-MINTD](https://github.com/cashubtc/cdk) database from redb to SQLite format. It specifically targets version 10 of CDK-MINTD and should only be used for upgrading from this version.
 
 ## Purpose
 
-The migration tool converts both the main mint database and the authentication database (if present) from ReDB to SQLite format. This migration is necessary for upgrading to newer versions of CDK-MINTD that use SQLite as the database backend.
+The migration tool converts both the main mint database and the authentication database (if present) from redb to SQLite format. This migration is necessary for upgrading to newer versions of CDK-MINTD that use SQLite as the database backend.
 
 ## Requirements
 
 - CDK-MINTD version 10 installed
-- Both the original ReDB database and target SQLite database locations must be accessible
+- Both the original redb database and target SQLite database locations must be accessible
 - Rust toolchain installed
 
 ## Installation
@@ -37,7 +37,7 @@ To specify a custom directory:
 ## Safety Features
 
 - The tool checks if a SQLite database already exists and will not overwrite it
-- The original ReDB database is not modified during the migration
+- The original redb database is not modified during the migration
 - Detailed logging of the migration process is provided
 
 ## What Gets Migrated
@@ -70,7 +70,7 @@ If you encounter any issues during migration, the tool provides detailed logging
 
 - Permission denied: Ensure you have write access to the target directory
 - Database already exists: Remove or rename any existing SQLite database files
-- Missing source database: Verify the ReDB database exists in the specified location
+- Missing source database: Verify the redb database exists in the specified location
 
 ## Contributing
 
