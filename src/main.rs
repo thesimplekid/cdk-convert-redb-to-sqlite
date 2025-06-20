@@ -16,8 +16,12 @@ use redb::{Database, ReadableTable, TableDefinition};
 use tracing_subscriber::EnvFilter;
 
 use crate::cli::CLIArgs;
+use crate::verify_blind_signatures::verify_blind_signatures;
+use crate::verify_migration::verify_migration;
 
 mod cli;
+mod verify_blind_signatures;
+mod verify_migration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -37,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
     let args = CLIArgs::parse();
 
     let work_dir = if let Some(work_dir) = args.work_dir {
-        tracing::info!("Using work dir from cmd arg");
+        println!("Using work dir from cmd arg: {:?}", work_dir);
         work_dir
     } else {
         work_dir()?
@@ -46,9 +50,9 @@ async fn main() -> anyhow::Result<()> {
     let redb_path = work_dir.join("cdk-mintd.redb");
     let sql_db_path = work_dir.join("cdk-mintd.sqlite");
 
-    tracing::info!("Starting database migration...");
-    tracing::info!("Source ReDB: {:?}", redb_path);
-    tracing::info!("Target SQLite: {:?}", sql_db_path);
+    println!("Starting database migration...");
+    println!("Source ReDB: {:?}", redb_path);
+    println!("Target SQLite: {:?}", sql_db_path);
 
     // Check if SQLite database already exists
     if sql_db_path.exists() {
@@ -59,30 +63,31 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let sqlite_db = MintSqliteDatabase::new(&sql_db_path).await?;
-    let redb_db = MintRedbDatabase::new(&redb_path)?;
+    {
+        let redb_db = MintRedbDatabase::new(&redb_path)?;
 
-    migrate_mint_info(&redb_db, &sqlite_db).await?;
-    migrate_quotes(&redb_db, &sqlite_db).await?;
+        migrate_mint_info(&redb_db, &sqlite_db).await?;
+        migrate_quotes(&redb_db, &sqlite_db).await?;
 
-    let keysets = redb_db.get_keyset_infos().await?;
-    let mut keyset_ids = vec![];
+        let keysets = redb_db.get_keyset_infos().await?;
+        let mut keyset_ids = vec![];
 
-    for keyset in keysets {
-        keyset_ids.push(keyset.id);
-        sqlite_db.add_keyset_info(keyset).await?;
+        for keyset in keysets {
+            keyset_ids.push(keyset.id);
+            sqlite_db.add_keyset_info(keyset).await?;
+        }
+
+        migrate_proofs(keyset_ids, &redb_db, &sqlite_db).await?;
     }
 
-    migrate_proofs(keyset_ids, &redb_db, &sqlite_db).await?;
     migrate_blind_signatures(&redb_path, &sqlite_db).await?;
 
-    tracing::info!("Migration completed successfully!");
-    tracing::info!("ReDB database: {:?}", redb_path);
-    tracing::info!("SQLite database: {:?}", sql_db_path);
+    println!("Migration completed! Starting verification...");
 
     // Auth database migration
     let auth_redb_path = work_dir.join("cdk-mintd-auth.redb");
     if auth_redb_path.exists() {
-        tracing::info!("Auth database detected migrating.");
+        println!("Auth database detected, migrating...");
 
         let auth_sql_db_path = work_dir.join("cdk-mintd-auth.sqlite");
         let sqlite_auth_db = MintSqliteAuthDatabase::new(&auth_sql_db_path).await?;
@@ -114,6 +119,12 @@ async fn main() -> anyhow::Result<()> {
         migrate_auth_keysets(&redb_auth_db, &sqlite_auth_db).await?;
         migrate_protected_endpoints(&redb_auth_db, &sqlite_auth_db).await?;
     }
+
+    verify_blind_signatures(work_dir.clone()).await?;
+    verify_migration(work_dir).await?;
+
+    println!("\n🎉 Migration verification completed successfully!");
+    println!("All data matches between Redb and SQLite databases");
 
     Ok(())
 }
